@@ -81,3 +81,18 @@ class OctoPrintClient:
         except Exception as e:
             logger.error(f'Error getting info about the job: {e}')
             return {}
+
+    def cancel_print(self) -> bool:
+        try:
+            response = requests.post(
+                f'{self.base_url}/api/job',
+                headers=self.headers,
+                json={'command': 'cancel'},
+                timeout=5
+            )
+            response.raise_for_status()
+            logger.info('Printing canceled in OctoPrint')
+            return True
+        except Exception as e:
+            logger.error(f'Error canceling a job: {e}')
+            return False
