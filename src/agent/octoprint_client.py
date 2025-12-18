@@ -28,3 +28,8 @@ class OctoPrintClient:
         except Exception as e:
             logger.error(f'Error get printer state: {e}')
             return {'state': {'text': 'Error'}}
+
+    def is_printer_ready(self) -> bool:
+        state = self.get_printer_state()
+        state_text = state.get('state', {}).get('text', '').lower()
+        return state_text in ['operational', 'ready']
