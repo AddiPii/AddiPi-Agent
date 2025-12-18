@@ -33,3 +33,51 @@ class OctoPrintClient:
         state = self.get_printer_state()
         state_text = state.get('state', {}).get('text', '').lower()
         return state_text in ['operational', 'ready']
+
+    def upload_and_select_file(self, file_path: str, filename: str) -> bool:
+        try:
+            with open(file_path, 'rb') as f:
+                files = {'file': (filename, f, 'application/octet-stream')}
+                data = {'select': 'true', 'print': 'false'}
+
+                response = requests.post(
+                    f'{self.base_url}/api/files/local',
+                    headers={'X-Api-Key': self.api_key},
+                    files=files,
+                    data=data,
+                    timeout=300
+                )
+                response.raise_for_status()
+                logger.info(f'File {filename} uploading to OctoPrint')
+                return True
+        except Exception as e:
+            logger.error(f'Error uploading file to Octoprint: {e}')
+            return False
+
+    def start_print(self) -> bool:
+        try:
+            response = requests.post(
+                f'{self.base_url}/api/job',
+                headers=self.headers,
+                json={'command': 'start'},
+                timeout=5
+            )
+            response.raise_for_status()
+            logger.info('Printing started in OctoPrint')
+            return True
+        except Exception as e:
+            logger.error(f'Error starting a print: {e}')
+            return False
+
+    def get_job_info(self) -> Dict[str, Any]:
+        try:
+            response = requests.get(
+                f'{self.base_url}/api/job',
+                headers=self.headers,
+                timeout=5
+            )
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            logger.error(f'Error getting info about the job: {e}')
+            return {}
