@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-    
+
 def init_config():
     device_conn_string = os.getenv('DEVICE_CONNECTION_STRING')
 

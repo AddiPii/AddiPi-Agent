@@ -39,3 +39,23 @@ class PrinterAgent:
         self.last_progress_report: float = 0
 
         logger.info('PrinterAgent successfully initialized')
+
+    def download_file_from_blob(self, file_id: str) -> Optional[str]:
+        try:
+            container_client = self.blob_service.get_container_client(
+                self.container_name
+            )
+            blob_client = container_client.get_blob_client(file_id)
+
+            local_path = os.path.join(self.local_files_dir, file_id)
+
+            logger.info(f'Downloading file {file_id} from Blob Storage...')
+            with open(local_path, 'wb') as f:
+                blob_data = blob_client.download_blob()
+                blob_data.readinto(f)
+
+            logger.info(f'File {file_id} downloaded to {local_path}')
+            return local_path
+        except Exception as e:
+            logger.error(f'Error downloading file from Blob Storage: {e}')
+            return None
