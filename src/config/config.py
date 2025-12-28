@@ -1,6 +1,10 @@
 import os
+from dotenv import load_dotenv
 
 
+load_dotenv()
+
+    
 def init_config():
     device_conn_string = os.getenv('DEVICE_CONNECTION_STRING')
 
@@ -17,7 +21,7 @@ def init_config():
     if not octoprint_api_key:
         raise ValueError('OCTOPRINT_API_KEY is not set')
 
-    octoprint_url = os.getenv('OCTOPRINT_URL', 'http://localhost:5000')
+    octoprint_url = os.getenv('OCTOPRINT_URL', 'http://prusai3mk3.local')
 
     return (
         device_conn_string,
