@@ -80,7 +80,7 @@ class PrinterAgent:
             if self.current_job_id:
                 message.custom_properties['jobId'] = self.current_job_id
 
-            self.iot_cliet.send_message(message)
+            self.iot_client.send_message(message)
             logger.info(f'Telemetry sent: {event_type}')
 
         except Exception as e:
@@ -278,9 +278,8 @@ class PrinterAgent:
             })
 
             logger.error(
-                f'Printing job {self.current_job_id}'
-                f'finished with error: {state}'
-                )
+                f'Printing job {self.current_job_id} finished with error: {state}'
+            )
 
             self.is_printing = False
             self.current_job_id = None
@@ -289,10 +288,10 @@ class PrinterAgent:
 
     def start(self):
         try:
-            self.iot_cliet.connect()
+            self.iot_client.connect()
             logger.info('Connected with IoT Hub')
 
-            self.iot_cliet.on_method_request_received = self.handle_method_request
+            self.iot_client.on_method_request_received = self.handle_method_request
 
             logger.info('Agent ready for receiving commands')
 
@@ -311,7 +310,7 @@ class PrinterAgent:
             logger.error(f'Error in the main loop: {e}')
             self.send_telemetry('agent_error', {'error': str(e)})
         finally:
-            self.iot_cliet.disconnect()
+            self.iot_client.disconnect()
             logger.info('Agent stopped')
 
     def handle_method_request(self, request):
