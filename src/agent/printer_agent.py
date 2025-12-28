@@ -143,3 +143,41 @@ class PrinterAgent:
                 'reason': str(e)
             })
             return False
+
+    def handle_start_print_method(self, request) -> MethodResponse:
+        try:
+            payload = json.loads(request.payload)
+            file_id = payload.get('fileId')
+            job_id = payload.get('jobId')
+
+            logger.info(f'Received command startPrint: {payload}')
+
+            if not file_id or not job_id:
+                return MethodResponse.create_from_method_request(
+                    request,
+                    400,
+                    {'error': 'Missing fileId or jobId'}
+                )
+
+            success = self.start_print_job(file_id, job_id)
+
+            if success:
+                return MethodResponse.create_from_method_request(
+                    request,
+                    200,
+                    {'status': 'printing_started', 'jobId': job_id}
+                )
+            else:
+                return MethodResponse.create_from_method_request(
+                    request,
+                    500,
+                    {'error': 'Failed to start printing'}
+                )
+
+        except Exception as e:
+            logger.error(f'Error handling startPrint: {e}')
+            return MethodResponse.create_from_method_request(
+                request,
+                500,
+                {'error': str(e)}
+            )
