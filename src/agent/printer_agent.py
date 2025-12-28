@@ -286,3 +286,38 @@ class PrinterAgent:
             self.current_job_id = None
             self.current_file_id = None
             self.print_start_time = None
+
+    def start(self):
+        try:
+            self.iot_cliet.connect()
+            logger.info('Connected with IoT Hub')
+
+            self.iot_cliet.on_method_request_received = self.handle_method_request
+
+            logger.info('Agent ready for receving commands')
+
+            self.send_telemetry('agent_started', {
+                'version': '1.0.0'
+            })
+
+            while True:
+                self.monitor_print_progress()
+                time.sleep(10)
+
+        except KeyboardInterrupt:
+            logger.info('Agent stopped...')
+            self.send_telemetry('agent stopped', {})
+        except Exception as e:
+            logger.error(f'Error in the main loop: {e}')
+            self.send_telemetry('agent_error', {'error': str(e)})
+        finally:
+            self.iot_cliet.disconnect()
+            logger.info('Agent stopped')
+
+    def handle_method_request(self, request):
+        logger.info(f'Method received: {request.name}')
+
+        if request.name == "startPrint":
+            return self.handle_start_print_method(request)
+        elif request.name == "cancelPrint":
+            return self.handle_cancel_print_method(request)
