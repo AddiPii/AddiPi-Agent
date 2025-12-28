@@ -1,7 +1,7 @@
 from utils.logger import get_logger
 from azure.iot.device import IoTHubDeviceClient, MethodResponse, Message
 from azure.storage.blob import BlobServiceClient
-from octoprint_client import OctoPrintClient
+from .octoprint_client import OctoPrintClient
 import os
 from typing import Optional, Dict, Any
 from datetime import datetime
