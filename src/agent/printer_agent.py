@@ -181,3 +181,42 @@ class PrinterAgent:
                 500,
                 {'error': str(e)}
             )
+
+    def handle_control_print_method(self, request) -> MethodResponse:
+        try:
+            if not self.is_printing:
+                return MethodResponse.create_from_method_request(
+                    request,
+                    400,
+                    {'error': 'No active print job'}
+                )
+
+            if self.octoprint.cancel_print():
+                self.send_telemetry('print_cancelled', {
+                    'jobId': self.current_job_id,
+                    'fileId': self.current_file_id
+                })
+
+                self.is_printing = False
+                job_id = self.current_job_id
+                self.current_job_id = None
+                self.current_file_id = None
+
+                return MethodResponse.create_from_method_request(
+                    request,
+                    200,
+                    {'status': 'print_cancelled', 'jobId': job_id}
+                )
+            else:
+                return MethodResponse.create_from_method_request(
+                    request,
+                    500,
+                    {'error': 'Failed to cancel print'}
+                )
+        except Exception as e:
+            logger.error(f'Error handling cancelPrint; {e}')
+            return MethodResponse.create_from_method_request(
+                request,
+                500,
+                {'error': str(e)}
+            )
