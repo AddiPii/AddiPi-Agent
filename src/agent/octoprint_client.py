@@ -26,7 +26,7 @@ class OctoPrintClient:
             response.raise_for_status()
             return response.json()
         except Exception as e:
-            logger.error(f'Error get printer state: {e}')
+            logger.error(f'Error getting printer state: {e}')
             return {'state': {'text': 'Error'}}
 
     def is_printer_ready(self) -> bool:
@@ -48,10 +48,10 @@ class OctoPrintClient:
                     timeout=300
                 )
                 response.raise_for_status()
-                logger.info(f'File {filename} uploading to OctoPrint')
+                logger.info(f'File {filename} uploaded to OctoPrint')
                 return True
         except Exception as e:
-            logger.error(f'Error uploading file to Octoprint: {e}')
+            logger.error(f'Error uploading file to OctoPrint: {e}')
             return False
 
     def start_print(self) -> bool:
