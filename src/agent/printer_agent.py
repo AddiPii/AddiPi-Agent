@@ -16,16 +16,16 @@ class PrinterAgent:
     def __init__(
             self,
             device_connection_string: str,
-            storage_connection_String: str,
+            storage_connection_string: str,
             octoprint_url: str,
             octoprint_api_key: str
     ):
-        self.iot_cliet = IoTHubDeviceClient.create_from_connection_string(
+        self.iot_client = IoTHubDeviceClient.create_from_connection_string(
             device_connection_string
         )
 
         self.blob_service = BlobServiceClient.from_connection_string(
-            storage_connection_String
+            storage_connection_string
         )
 
         self.container_name = '.gcode'
@@ -102,7 +102,7 @@ class PrinterAgent:
                 self.send_telemetry('print_failed', {
                     'jobId': job_id,
                     'fileId': file_id,
-                    'reason': 'downloaded_failed'
+                    'reason': 'download_failed'
                 })
                 return False
 
@@ -214,7 +214,7 @@ class PrinterAgent:
                     {'error': 'Failed to cancel print'}
                 )
         except Exception as e:
-            logger.error(f'Error handling cancelPrint; {e}')
+            logger.error(f'Error handling cancelPrint: {e}')
             return MethodResponse.create_from_method_request(
                 request,
                 500,
@@ -226,7 +226,7 @@ class PrinterAgent:
             return
 
         job_info = self.octoprint.get_job_info()
-        progress = job_info.get('progess', {})
+        progress = job_info.get('progress', {})
         state = job_info.get('state', 'Unknown')
 
         completion = progress.get('completion', 0)
@@ -255,7 +255,7 @@ class PrinterAgent:
 
             self.send_telemetry('print_completed', {
                 'jobId': self.current_job_id,
-                'fileId': self.current_job_id,
+                'fileId': self.current_file_id,
                 'printDuration':  print_duration,
                 'success': True
             })
@@ -278,7 +278,7 @@ class PrinterAgent:
             })
 
             logger.error(
-                f'Printing fob {self.current_job_id}'
+                f'Printing job {self.current_job_id}'
                 f'finished with error: {state}'
                 )
 
@@ -294,7 +294,7 @@ class PrinterAgent:
 
             self.iot_cliet.on_method_request_received = self.handle_method_request
 
-            logger.info('Agent ready for receving commands')
+            logger.info('Agent ready for receiving commands')
 
             self.send_telemetry('agent_started', {
                 'version': '1.0.0'
@@ -306,7 +306,7 @@ class PrinterAgent:
 
         except KeyboardInterrupt:
             logger.info('Agent stopped...')
-            self.send_telemetry('agent stopped', {})
+            self.send_telemetry('agent_stopped', {})
         except Exception as e:
             logger.error(f'Error in the main loop: {e}')
             self.send_telemetry('agent_error', {'error': str(e)})
