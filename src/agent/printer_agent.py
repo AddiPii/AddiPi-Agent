@@ -1,9 +1,11 @@
 from utils.logger import get_logger
-from azure.iot.device import IoTHubDeviceClient, MethodResponse, Message
+from azure.iot.device import IoTHubDeviceClient, Message
 from azure.storage.blob import BlobServiceClient
 from octoprint_client import OctoPrintClient
 import os
-from typing import Optional
+from typing import Optional, Dict, Any
+from datetime import datetime
+import json
 
 
 logger = get_logger(__name__)
@@ -59,3 +61,26 @@ class PrinterAgent:
         except Exception as e:
             logger.error(f'Error downloading file from Blob Storage: {e}')
             return None
+
+    def send_telemetry(self, event_type: str, data: Dict[str, Any]):
+        try:
+            message_data = {
+                'event': event_type,
+                'timestamp': datetime.now().isoformat(),
+                'deviceId': 'raspberry-pi-mkt-01',
+                **data
+            }
+
+            message = Message(json.dumps(message_data))
+            message.content_encoding = 'utf-8'
+            message.content_type = 'application/json'
+
+            message.custom_properties['eventType'] = event_type
+            if self.current_job_id:
+                message.custom_properties['jobId'] = self.current_job_id
+
+            self.iot_cliet.send_message(message)
+            logger.info(f'Telemetry sent: {event_type}')
+
+        except Exception as e:
+            logger.error(f'Error sending telemetry: {e}')
