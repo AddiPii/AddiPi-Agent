@@ -182,7 +182,7 @@ class PrinterAgent:
                 {'error': str(e)}
             )
 
-    def handle_control_print_method(self, request) -> MethodResponse:
+    def handle_cancel_print_method(self, request) -> MethodResponse:
         try:
             if not self.is_printing:
                 return MethodResponse.create_from_method_request(
@@ -321,3 +321,11 @@ class PrinterAgent:
             return self.handle_start_print_method(request)
         elif request.name == "cancelPrint":
             return self.handle_cancel_print_method(request)
+        elif request.name == "getStatus":
+            return self.handle_get_status_method(request)
+        else:
+            return MethodResponse.create_from_method_request(
+                request,
+                404,
+                {'error': f'Method {request.name} not found'}
+            )
