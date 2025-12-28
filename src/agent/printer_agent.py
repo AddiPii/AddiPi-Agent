@@ -220,3 +220,69 @@ class PrinterAgent:
                 500,
                 {'error': str(e)}
             )
+
+    def monitor_print_progress(self):
+        if not self.is_printing:
+            return
+
+        job_info = self.octoprint.get_job_info()
+        progress = job_info.get('progess', {})
+        state = job_info.get('state', 'Unknown')
+
+        completion = progress.get('completion', 0)
+        print_time = progress.get('printTime', 0)
+        print_time_left = progress.get('printTimeLeft', 0)
+
+        logger.info(
+            f'Print status: {state}, Progress: {completion:.1f}%, '
+            f'Time: {print_time}s, Left: {print_time_left}s'
+        )
+
+        current_time = time.time()
+        if current_time - self.last_progress_report > 30:
+            self.send_telemetry('print_progress', {
+                'jobId': self.current_job_id,
+                'fileId': self.current_file_id,
+                'progress': completion,
+                'printTime': print_time,
+                'printTimeLeft': print_time_left,
+                'state': state
+            })
+            self.last_progress_report = current_time
+
+        if state.lower() in ['operational', 'ready'] and self.is_printing:
+            print_duration = time.time() - self.print_start_time if self.print_start_time else 0
+
+            self.send_telemetry('print_completed', {
+                'jobId': self.current_job_id,
+                'fileId': self.current_job_id,
+                'printDuration':  print_duration,
+                'success': True
+            })
+
+            logger.info(
+                f'Printing job {self.current_job_id} successfully finished'
+                )
+
+            self.is_printing = False
+            self.current_job_id = None
+            self.current_file_id = None
+            self.print_start_time = None
+
+        elif state.lower() in ['error', 'offline'] and self.is_printing:
+            self.send_telemetry('print_failed', {
+                'jobId': self.current_job_id,
+                'fileId': self.current_file_id,
+                'reason': f'printer error: {state}',
+                'success': False
+            })
+
+            logger.error(
+                f'Printing fob {self.current_job_id}'
+                f'finished with error: {state}'
+                )
+
+            self.is_printing = False
+            self.current_job_id = None
+            self.current_file_id = None
+            self.print_start_time = None
