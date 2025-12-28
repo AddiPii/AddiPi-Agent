@@ -1,11 +1,12 @@
 from utils.logger import get_logger
-from azure.iot.device import IoTHubDeviceClient, Message
+from azure.iot.device import IoTHubDeviceClient, MethodResponse, Message
 from azure.storage.blob import BlobServiceClient
 from octoprint_client import OctoPrintClient
 import os
 from typing import Optional, Dict, Any
 from datetime import datetime
 import json
+import time
 
 
 logger = get_logger(__name__)
@@ -84,3 +85,61 @@ class PrinterAgent:
 
         except Exception as e:
             logger.error(f'Error sending telemetry: {e}')
+
+    def start_print_job(self, file_id: str, job_id: str) -> bool:
+        try:
+            if not self.octoprint.is_printer_ready():
+                logger.error('Printer is not ready')
+                self.send_telemetry('print_failed', {
+                    'jobId': job_id,
+                    'fileId': file_id,
+                    'reason': 'printer_not_ready'
+                })
+                return False
+
+            local_path = self.download_file_from_blob(file_id)
+            if not local_path:
+                self.send_telemetry('print_failed', {
+                    'jobId': job_id,
+                    'fileId': file_id,
+                    'reason': 'downloaded_failed'
+                })
+                return False
+
+            if not self.octoprint.upload_and_select_file(local_path, file_id):
+                self.send_telemetry('print_failed', {
+                    'jobId': job_id,
+                    'fileId': file_id,
+                    'reason': 'upload_to_octoprint_failed'
+                })
+                return False
+
+            if not self.octoprint.start_print():
+                self.send_telemetry('print_failed', {
+                    'jobId': job_id,
+                    'fileId': file_id,
+                    'reason': 'start_print_failed'
+                })
+                return False
+
+            self.current_job_id = job_id
+            self.current_file_id = file_id
+            self.is_printing = True
+            self.print_start_time = time.time()
+
+            self.send_telemetry('print_started', {
+                'jobId': job_id,
+                'fileId': file_id
+            })
+
+            logger.info(f'Job {job_id} started successfully')
+            return True
+
+        except Exception as e:
+            logger.error(f'Error in start_print_job: {e}')
+            self.send_telemetry('print_failed', {
+                'jobId': job_id,
+                'fileId': file_id,
+                'reason': str(e)
+            })
+            return False
