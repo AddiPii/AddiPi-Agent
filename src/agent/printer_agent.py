@@ -329,3 +329,29 @@ class PrinterAgent:
                 404,
                 {'error': f'Method {request.name} not found'}
             )
+
+    def handle_get_status_method(self, request) -> MethodResponse:
+        try:
+            printer_state = self.octoprint.get_printer_state()
+            job_info = self.octoprint.get_job_info()
+
+            status = {
+                'isPrinting': self.is_printing,
+                'currentJobId': self.current_job_id,
+                'currentFileId': self.current_file_id,
+                'printerState': printer_state.get('state', {}).get('text'),
+                'progress': job_info.get('progress', {}).get('completion', 0),
+                'timestamp': datetime.now().isoformat()
+            }
+
+            return MethodResponse.create_from_method_request(
+                request,
+                200,
+                status
+            )
+        except Exception as e:
+            return MethodResponse.create_from_method_request(
+                request,
+                500,
+                {'error': str(e)}
+            )
