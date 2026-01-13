@@ -379,12 +379,21 @@ class PrinterAgent:
             progress_data = job_info.get('progress', {})
             completion = progress_data.get('completion') if progress_data else None
 
+            # Pobranie temperatur
+            temperatures = printer_state.get('temperature', {})
+            nozzle_temp = temperatures.get('tool0', {}).get('actual', 0.0)
+            bed_temp = temperatures.get('bed', {}).get('actual', 0.0)
+
             status = {
                 'isPrinting': self.is_printing,
                 'currentJobId': self.current_job_id,
                 'currentFileId': self.current_file_id,
                 'printerState': printer_state.get('state', {}).get('text', 'Unknown'),
                 'progress': completion if completion is not None else 0.0,  # <-- Zawsze liczba!
+                'temperature': {
+                    'nozzle': nozzle_temp,
+                    'bed': bed_temp
+                    },
                 'timestamp': datetime.utcnow().isoformat()
             }
 
